@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compilador de Triaje Hospitalario</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#0a0e1a;--surface:#111827;--card:#1a2236;--border:#1e3a5f;--accent:#00d4ff;--accent2:#00ff9d;--danger:#ff4d6d;--warn:#fbbf24;--text:#e2e8f0;--text-dim:#64748b}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        header{padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;background:rgba(17,24,39,.8)}
+        .logo{width:38px;height:38px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+        header h1{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--accent)}
+        header span{font-size:.75rem;color:var(--text-dim);margin-left:auto;background:rgba(0,212,255,.08);padding:.3rem .8rem;border-radius:20px;border:1px solid rgba(0,212,255,.2)}
+        .workspace{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 70px)}
+        .panel-editor{display:flex;flex-direction:column;border-right:1px solid var(--border)}
+        .panel-header{padding:.8rem 1.2rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .panel-title{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+        .btn-group{display:flex;gap:.5rem}
+        .btn{font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:500;padding:.45rem 1rem;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all .2s}
+        .btn-primary{background:var(--accent);color:#0a0e1a;font-weight:600}
+        .btn-secondary{background:transparent;border-color:var(--border);color:var(--text-dim)}
+        .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+        #editor{flex:1;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;background:#0d1420;color:#c9d1d9;border:none;outline:none;resize:none;padding:1.2rem 1.5rem;caret-color:var(--accent)}
+        .panel-results{display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+        .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--card)}
+        .tab{padding:.7rem 1.1rem;font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+        .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+        .tab-content{display:none;flex:1;overflow-y:auto;padding:1rem 1.2rem}
+        .tab-content.active{display:block}
+        .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-dim);text-align:center;gap:.8rem}
+        .empty-icon{font-size:3rem;opacity:.3}
+        .tokens-grid{display:flex;flex-wrap:wrap;gap:.4rem;padding:.5rem 0}
+        .token-chip{font-family:'JetBrains Mono',monospace;font-size:.68rem;padding:.25rem .6rem;border-radius:4px;border:1px solid;display:flex;align-items:center;gap:.4rem}
+        .token-chip.PACIENTE,.token-chip.SIGNOS,.token-chip.VITALES,.token-chip.SINTOMA,.token-chip.PRIORIDAD,.token-chip.NIVEL,.token-chip.FIN{background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.3);color:var(--accent)}
+        .token-chip.ID{background:rgba(0,255,157,.08);border-color:rgba(0,255,157,.3);color:var(--accent2)}
+        .token-chip.NUMERO{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:var(--warn)}
+        .token-chip.CADENA{background:rgba(249,115,22,.08);border-color:rgba(249,115,22,.3);color:#fb923c}
+        .token-chip.NIVEL_VAL{background:rgba(255,77,109,.08);border-color:rgba(255,77,109,.3);color:var(--danger)}
+        .token-chip.default{background:rgba(100,116,139,.1);border-color:rgba(100,116,139,.3);color:var(--text-dim)}
+        .token-label{font-size:.6rem;opacity:.6;text-transform:uppercase}
+        .ast-node{margin:.15rem 0}
+        .ast-node-header{display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;font-family:'JetBrains Mono',monospace;font-size:.75rem}
+        .ast-node-type{color:var(--accent);font-weight:600}
+        .ast-node-val{color:var(--accent2)}
+        .ast-children{margin-left:1.5rem;border-left:1px dashed var(--border);padding-left:.5rem}
+        .paciente-card{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:1rem;overflow:hidden}
+        .paciente-card-header{padding:.8rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+        .paciente-nombre{font-weight:600;font-size:.9rem}
+        .nivel-badge{font-size:.7rem;font-weight:700;padding:.2rem .7rem;border-radius:20px}
+        .nivel-I{background:rgba(255,77,109,.2);color:#ff4d6d;border:1px solid #ff4d6d}
+        .nivel-II{background:rgba(249,115,22,.2);color:#f97316;border:1px solid #f97316}
+        .nivel-III{background:rgba(251,191,36,.2);color:#fbbf24;border:1px solid #fbbf24}
+        .nivel-IV{background:rgba(52,211,153,.2);color:#34d399;border:1px solid #34d399}
+        .nivel-V{background:rgba(96,165,250,.2);color:#60a5fa;border:1px solid #60a5fa}
+        .signos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;padding:.8rem 1rem}
+        .signo-item{background:rgba(0,0,0,.2);border-radius:6px;padding:.5rem .7rem}
+        .signo-nombre{font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
+        .signo-valor{font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:600}
+        .sintoma-text{padding:0 1rem .8rem;font-size:.82rem;color:var(--text-dim);font-style:italic}
+        .error-list{display:flex;flex-direction:column;gap:.6rem}
+        .error-item{padding:.8rem 1rem;border-radius:6px;border-left:3px solid;font-size:.8rem;line-height:1.5}
+        .error-item.error{background:rgba(255,77,109,.08);border-color:var(--danger)}
+        .error-item.warn{background:rgba(251,191,36,.08);border-color:var(--warn)}
+        .error-tipo{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
+        .error-item.error .error-tipo{color:var(--danger)}
+        .error-item.warn .error-tipo{color:var(--warn)}
+        .status-bar{background:var(--card);border-top:1px solid var(--border);padding:.4rem 1.2rem;display:flex;align-items:center;gap:1.2rem;font-size:.7rem;color:var(--text-dim);flex-shrink:0}
+        .status-ok{color:var(--accent2)}.status-err{color:var(--danger)}.status-warn{color:var(--warn)}
+        .loading{display:flex;align-items:center;justify-content:center;gap:.5rem;color:var(--text-dim);font-size:.82rem;padding:2rem}
+        .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .section-title{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.8rem;margin-top:1rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+        .section-title:first-child{margin-top:0}
+        .success-banner{background:rgba(0,255,157,.08);border:1px solid rgba(0,255,157,.3);border-radius:8px;padding:1rem;display:flex;align-items:center;gap:.8rem;margin-bottom:1rem;font-size:.82rem;color:var(--accent2)}
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">🏥</div>
+    <h1>TriageCompiler</h1>
+    <span>Compiladores · USIL 2026</span>
+</header>
+<div class="workspace">
+    <div class="panel-editor">
+        <div class="panel-header">
+            <div class="panel-title">Editor de Código</div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="cargarEjemplo()">Ejemplo</button>
+                <button class="btn btn-secondary" onclick="limpiar()">Limpiar</button>
+                <button class="btn btn-primary" onclick="compilarCodigo()">▶ Compilar</button>
+            </div>
+        </div>
+        <textarea id="editor" placeholder="// Escribe el código de triaje aquí...">{{ ejemplo }}</textarea>
+    </div>
+    <div class="panel-results">
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('tokens')">Tokens</div>
+            <div class="tab" onclick="showTab('ast')">AST</div>
+            <div class="tab" onclick="showTab('semantico')">Semántico</div>
+            <div class="tab" onclick="showTab('errores')">Errores <span id="err-count"></span></div>
+        </div>
+        <div id="tab-tokens" class="tab-content active"><div class="empty-state"><div class="empty-icon">⟨/⟩</div><p>Presiona ▶ Compilar para analizar.</p></div></div>
+        <div id="tab-ast" class="tab-content"><div class="empty-state"><div class="empty-icon">🌿</div><p>El árbol AST aparecerá aquí.</p></div></div>
+        <div id="tab-semantico" class="tab-content"><div class="empty-state"><div class="empty-icon">📋</div><p>La tabla de símbolos se mostrará aquí.</p></div></div>
+        <div id="tab-errores" class="tab-content"><div class="empty-state"><div class="empty-icon">✓</div><p>No hay errores aún.</p></div></div>
+        <div class="status-bar" id="status-bar"><div>🔵 Listo</div></div>
+    </div>
+</div>
+<script>
+function showTab(name){document.querySelectorAll('.tab').forEach((t,i)=>{const names=['tokens','ast','semantico','errores'];t.classList.toggle('active',names[i]===name);});document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');}
+function limpiar(){document.getElementById('editor').value='';['tokens','ast','semantico','errores'].forEach(t=>{document.getElementById('tab-'+t).innerHTML='<div class="empty-state"><div class="empty-icon">○</div><p>Compila para ver resultados.</p></div>';});document.getElementById('status-bar').innerHTML='<div>🔵 Listo</div>';document.getElementById('err-count').textContent='';}
+async function cargarEjemplo(){const r=await fetch('/ejemplo');const d=await r.json();document.getElementById('editor').value=d.codigo;}
+async function compilarCodigo(){
+    const codigo=document.getElementById('editor').value;
+    if(!codigo.trim())return;
+    ['tokens','ast','semantico','errores'].forEach(t=>{document.getElementById('tab-'+t).innerHTML='<div class="loading"><div class="spinner"></div> Analizando...</div>';});
+    document.getElementById('status-bar').innerHTML='<div>⏳ Compilando...</div>';
+    try{
+        const resp=await fetch('/compilar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo})});
+        const data=await resp.json();renderResultados(data);
+    }catch(e){document.getElementById('status-bar').innerHTML='<div class="status-err">❌ Error de conexión</div>';}
+}
+function renderResultados(data){
+    renderTokens(data.tokens||[]);renderAST(data.arbol);renderSemantico(data.tabla_simbolos||{});renderErrores(data);
+    const totalErr=(data.errores_lexicos||[]).length+(data.errores_sintacticos||[]).length+(data.errores_semanticos||[]).length;
+    const warns=(data.advertencias||[]).length;
+    document.getElementById('err-count').textContent=totalErr>0?`(${totalErr})`:'';
+    let s=data.exitoso?'<div class="status-ok">✓ Compilación exitosa</div>':`<div class="status-err">✗ ${totalErr} error(es)</div>`;
+    if(warns>0)s+=`<div class="status-warn">⚠ ${warns} advertencia(s)</div>`;
+    s+=`<div>${(data.tokens||[]).length} tokens</div>`;
+    document.getElementById('status-bar').innerHTML=s;
+}
+function renderTokens(tokens){
+    const c=document.getElementById('tab-tokens');
+    if(!tokens.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">∅</div><p>Sin tokens.</p></div>';return;}
+    const conocidos=['PACIENTE','SIGNOS','VITALES','SINTOMA','PRIORIDAD','NIVEL','FIN','ID','NUMERO','CADENA','NIVEL_VAL'];
+    let h='<div class="section-title">Tokens ('+tokens.length+')</div><div class="tokens-grid">';
+    tokens.forEach(t=>{const cls=conocidos.includes(t.tipo)?t.tipo:'default';h+=`<div class="token-chip ${cls}" title="L${t.linea}:C${t.columna}"><span class="token-label">${t.tipo}</span><strong>${esc(t.valor)}</strong></div>`;});
+    h+='</div>';c.innerHTML=h;
+}
+function renderAST(arbol){
+    const c=document.getElementById('tab-ast');
+    if(!arbol){c.innerHTML='<div class="empty-state"><div class="empty-icon">∅</div><p>Sin árbol AST.</p></div>';return;}
+    c.innerHTML='<div class="section-title">Árbol de Sintaxis Abstracta</div>'+renderNodo(arbol);
+}
+function renderNodo(n){
+    let h=`<div class="ast-node"><div class="ast-node-header"><span class="ast-node-type">${n.tipo}</span>${n.valor?`<span class="ast-node-val">"${esc(n.valor)}"</span>`:''}</div>`;
+    if(n.hijos&&n.hijos.length){h+='<div class="ast-children">';n.hijos.forEach(c=>{h+=renderNodo(c);});h+='</div>';}
+    return h+'</div>';
+}
+function renderSemantico(tabla){
+    const c=document.getElementById('tab-semantico');
+    const ps=Object.entries(tabla);
+    if(!ps.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Sin datos semánticos.</p></div>';return;}
+    const nombres={frecuencia_cardiaca:'F. Cardíaca',presion_sistolica:'P. Sistólica',presion_diastolica:'P. Diastólica',saturacion:'Saturación O₂',temperatura:'Temperatura',frecuencia_respiratoria:'F. Respiratoria',glucosa:'Glucosa'};
+    let h='<div class="section-title">Tabla de Símbolos — '+ps.length+' paciente(s)</div><div class="success-banner">✓ Análisis semántico completado</div>';
+    ps.forEach(([id,d])=>{
+        const n=d.prioridad||'?';
+        h+=`<div class="paciente-card"><div class="paciente-card-header"><div class="paciente-nombre">👤 ${esc(id)}</div><span class="nivel-badge nivel-${n}">NIVEL ${n}</span></div><div class="signos-grid">`;
+        Object.entries(d.signos||{}).forEach(([k,v])=>{h+=`<div class="signo-item"><div class="signo-nombre">${nombres[k]||k}</div><div class="signo-valor">${v}</div></div>`;});
+        h+=`</div>`;
+        if(d.sintoma)h+=`<div class="sintoma-text">💬 "${esc(d.sintoma)}"</div>`;
+        if(d.prioridad_sugerida&&d.prioridad_sugerida!==d.prioridad)h+=`<div class="sintoma-text" style="color:var(--warn)">⚠ Sugerida: NIVEL ${d.prioridad_sugerida}</div>`;
+        h+=`</div>`;
+    });
+    c.innerHTML=h;
+}
+function renderErrores(data){
+    const c=document.getElementById('tab-errores');
+    const todos=[...(data.errores_lexicos||[]).map(e=>({...e,cls:'error'})),...(data.errores_sintacticos||[]).map(e=>({...e,cls:'error'})),...(data.errores_semanticos||[]).map(e=>({...e,cls:'error'})),...(data.advertencias||[]).map(e=>({...e,cls:'warn'}))];
+    if(!todos.length){c.innerHTML='<div class="success-banner" style="margin-top:.5rem">✓ Sin errores — código válido</div>';return;}
+    let h='<div class="section-title">Diagnóstico ('+todos.length+')</div><div class="error-list">';
+    todos.forEach(e=>{h+=`<div class="error-item ${e.cls}"><div class="error-tipo">${e.tipo}</div><div>${esc(e.mensaje)}</div>${e.linea&&e.linea!=='-'?`<div class="error-linea">Línea ${e.linea}</div>`:''}</div>`;});
+    h+='</div>';c.innerHTML=h;
+}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+document.getElementById('editor').addEventListener('keydown',function(e){
+    if(e.key==='Tab'){e.preventDefault();const s=this.selectionStart;this.value=this.value.substring(0,s)+'    '+this.value.substring(this.selectionEnd);this.selectionStart=this.selectionEnd=s+4;}
+    if((e.ctrlKey||e.metaKey)&&e.key==='Enter')compilarCodigo();
+});
+</script>
+</body>
+</html>
