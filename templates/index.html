@@ -152,7 +152,8 @@ function renderNodo(n){
 }
 function renderSemantico(tabla){
     const c=document.getElementById('tab-semantico');
-    const ps=Object.entries(tabla);
+    const orden={'I':1,'II':2,'III':3,'IV':4,'V':5};
+    const ps=Object.entries(tabla).sort((a,b)=>(orden[a[1].prioridad]||5)-(orden[b[1].prioridad]||5));
     if(!ps.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Sin datos semánticos.</p></div>';return;}
     const nombres={frecuencia_cardiaca:'F. Cardíaca',presion_sistolica:'P. Sistólica',presion_diastolica:'P. Diastólica',saturacion:'Saturación O₂',temperatura:'Temperatura',frecuencia_respiratoria:'F. Respiratoria',glucosa:'Glucosa'};
     let h='<div class="section-title">Tabla de Símbolos — '+ps.length+' paciente(s)</div><div class="success-banner">✓ Análisis semántico completado</div>';
