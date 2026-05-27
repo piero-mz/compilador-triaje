@@ -81,5 +81,10 @@ class AnalizadorSemantico:
         return prioridad_max
 
     def get_tabla_simbolos(self):
-        return self.tabla_simbolos
+        orden = {'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5}
+        ordenado = dict(sorted(
+            self.tabla_simbolos.items(),
+            key=lambda x: orden.get(x[1].get('prioridad', 'V'), 5)
+        ))
+        return ordenado
 
