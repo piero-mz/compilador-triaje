@@ -1,6 +1,7 @@
 from .lexer import Lexer
 from .parser import Parser
 from .semantic import AnalizadorSemantico
+from .codegen import GeneradorCodigo
 
 def compilar(codigo):
     resultado = {
@@ -11,6 +12,7 @@ def compilar(codigo):
         'errores_sintacticos': [],
         'errores_semanticos': [],
         'advertencias': [],
+        'codigo_generado': '',
         'exitoso': False
     }
 
@@ -34,10 +36,15 @@ def compilar(codigo):
     errores_sem, advertencias = semantico.analizar()
     resultado['errores_semanticos'] = errores_sem
     resultado['advertencias'] = advertencias
+
     tabla = semantico.get_tabla_simbolos()
     orden = {'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5}
     tabla_ordenada = dict(sorted(tabla.items(), key=lambda x: orden.get(x[1].get('prioridad', 'V'), 5)))
     resultado['tabla_simbolos'] = tabla_ordenada
+
+    if not errores_sem:
+        gen = GeneradorCodigo(arbol, tabla_ordenada)
+        resultado['codigo_generado'] = gen.generar()
 
     total_errores = len(errores_lex) + len(errores_sin) + len(errores_sem)
     resultado['exitoso'] = total_errores == 0

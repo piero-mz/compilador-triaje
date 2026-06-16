@@ -24,8 +24,8 @@
         .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
         #editor{flex:1;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;background:#0d1420;color:#c9d1d9;border:none;outline:none;resize:none;padding:1.2rem 1.5rem;caret-color:var(--accent)}
         .panel-results{display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
-        .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--card)}
-        .tab{padding:.7rem 1.1rem;font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+        .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--card);overflow-x:auto}
+        .tab{padding:.7rem 1.1rem;font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
         .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
         .tab-content{display:none;flex:1;overflow-y:auto;padding:1rem 1.2rem}
         .tab-content.active{display:block}
@@ -74,6 +74,7 @@
         .section-title{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.8rem;margin-top:1rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
         .section-title:first-child{margin-top:0}
         .success-banner{background:rgba(0,255,157,.08);border:1px solid rgba(0,255,157,.3);border-radius:8px;padding:1rem;display:flex;align-items:center;gap:.8rem;margin-bottom:1rem;font-size:.82rem;color:var(--accent2)}
+        .code-block{font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.6;background:#0d1420;padding:1rem;border-radius:6px;overflow-x:auto;color:#c9d1d9;white-space:pre}
     </style>
 </head>
 <body>
@@ -100,30 +101,49 @@
             <div class="tab" onclick="showTab('ast')">AST</div>
             <div class="tab" onclick="showTab('semantico')">Semántico</div>
             <div class="tab" onclick="showTab('errores')">Errores <span id="err-count"></span></div>
+            <div class="tab" onclick="showTab('codigo')">Código .py</div>
         </div>
         <div id="tab-tokens" class="tab-content active"><div class="empty-state"><div class="empty-icon">⟨/⟩</div><p>Presiona ▶ Compilar para analizar.</p></div></div>
         <div id="tab-ast" class="tab-content"><div class="empty-state"><div class="empty-icon">🌿</div><p>El árbol AST aparecerá aquí.</p></div></div>
         <div id="tab-semantico" class="tab-content"><div class="empty-state"><div class="empty-icon">📋</div><p>La tabla de símbolos se mostrará aquí.</p></div></div>
         <div id="tab-errores" class="tab-content"><div class="empty-state"><div class="empty-icon">✓</div><p>No hay errores aún.</p></div></div>
+        <div id="tab-codigo" class="tab-content"><div class="empty-state"><div class="empty-icon">⟨/⟩</div><p>El código generado aparecerá aquí.</p></div></div>
         <div class="status-bar" id="status-bar"><div>🔵 Listo</div></div>
     </div>
 </div>
 <script>
-function showTab(name){document.querySelectorAll('.tab').forEach((t,i)=>{const names=['tokens','ast','semantico','errores'];t.classList.toggle('active',names[i]===name);});document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');}
-function limpiar(){document.getElementById('editor').value='';['tokens','ast','semantico','errores'].forEach(t=>{document.getElementById('tab-'+t).innerHTML='<div class="empty-state"><div class="empty-icon">○</div><p>Compila para ver resultados.</p></div>';});document.getElementById('status-bar').innerHTML='<div>🔵 Listo</div>';document.getElementById('err-count').textContent='';}
+function showTab(name){
+    const names=['tokens','ast','semantico','errores','codigo'];
+    document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',names[i]===name);});
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+}
+function limpiar(){
+    document.getElementById('editor').value='';
+    ['tokens','ast','semantico','errores','codigo'].forEach(t=>{
+        document.getElementById('tab-'+t).innerHTML='<div class="empty-state"><div class="empty-icon">○</div><p>Compila para ver resultados.</p></div>';
+    });
+    document.getElementById('status-bar').innerHTML='<div>🔵 Listo</div>';
+    document.getElementById('err-count').textContent='';
+}
 async function cargarEjemplo(){const r=await fetch('/ejemplo');const d=await r.json();document.getElementById('editor').value=d.codigo;}
 async function compilarCodigo(){
     const codigo=document.getElementById('editor').value;
     if(!codigo.trim())return;
-    ['tokens','ast','semantico','errores'].forEach(t=>{document.getElementById('tab-'+t).innerHTML='<div class="loading"><div class="spinner"></div> Analizando...</div>';});
+    ['tokens','ast','semantico','errores','codigo'].forEach(t=>{document.getElementById('tab-'+t).innerHTML='<div class="loading"><div class="spinner"></div> Analizando...</div>';});
     document.getElementById('status-bar').innerHTML='<div>⏳ Compilando...</div>';
     try{
         const resp=await fetch('/compilar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo})});
-        const data=await resp.json();renderResultados(data);
+        const data=await resp.json();
+        renderResultados(data);
     }catch(e){document.getElementById('status-bar').innerHTML='<div class="status-err">❌ Error de conexión</div>';}
 }
 function renderResultados(data){
-    renderTokens(data.tokens||[]);renderAST(data.arbol);renderSemantico(data.tabla_simbolos||{});renderErrores(data);
+    renderTokens(data.tokens||[]);
+    renderAST(data.arbol);
+    renderSemantico(data.tabla_simbolos||{});
+    renderErrores(data);
+    renderCodigo(data.codigo_generado||'');
     const totalErr=(data.errores_lexicos||[]).length+(data.errores_sintacticos||[]).length+(data.errores_semanticos||[]).length;
     const warns=(data.advertencias||[]).length;
     document.getElementById('err-count').textContent=totalErr>0?`(${totalErr})`:'';
@@ -175,6 +195,24 @@ function renderErrores(data){
     let h='<div class="section-title">Diagnóstico ('+todos.length+')</div><div class="error-list">';
     todos.forEach(e=>{h+=`<div class="error-item ${e.cls}"><div class="error-tipo">${e.tipo}</div><div>${esc(e.mensaje)}</div>${e.linea&&e.linea!=='-'?`<div class="error-linea">Línea ${e.linea}</div>`:''}</div>`;});
     h+='</div>';c.innerHTML=h;
+}
+function renderCodigo(codigo){
+    const c=document.getElementById('tab-codigo');
+    if(!codigo){c.innerHTML='<div class="empty-state"><div class="empty-icon">⟨/⟩</div><p>Sin código generado aún.</p></div>';return;}
+    let h='<div class="section-title">Código Python Generado</div>';
+    h+='<button class="btn btn-primary" style="margin-bottom:1rem" onclick="descargarCodigo()">⬇ Descargar .py</button>';
+    h+=`<div class="code-block">${esc(codigo)}</div>`;
+    c.innerHTML=h;
+    c._codigoGenerado=codigo;
+}
+async function descargarCodigo(){
+    const c=document.getElementById('tab-codigo');
+    const codigo=c._codigoGenerado||'';
+    const resp=await fetch('/descargar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo_generado:codigo})});
+    const blob=await resp.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='vitalcheck_output.py';a.click();
 }
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 document.getElementById('editor').addEventListener('keydown',function(e){

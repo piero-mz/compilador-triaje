@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from compiler import compilar
 
 app = Flask(__name__)
@@ -41,5 +41,15 @@ def compilar_codigo():
 def obtener_ejemplo():
     return jsonify({"codigo": EJEMPLO_CODIGO})
 
+@app.route("/descargar", methods=["POST"])
+def descargar():
+    data = request.get_json()
+    codigo_py = data.get("codigo_generado", "")
+    return Response(
+        codigo_py,
+        mimetype="text/x-python",
+        headers={"Content-Disposition": "attachment; filename=vitalcheck_output.py"}
+    )
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)
