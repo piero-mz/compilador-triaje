@@ -17,7 +17,7 @@
         .panel-editor{display:flex;flex-direction:column;border-right:1px solid var(--border)}
         .panel-header{padding:.8rem 1.2rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
         .panel-title{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
-        .btn-group{display:flex;gap:.5rem}
+        .btn-group{display:flex;gap:.5rem;align-items:center}
         .btn{font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:500;padding:.45rem 1rem;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all .2s}
         .btn-primary{background:var(--accent);color:#0a0e1a;font-weight:600}
         .btn-secondary{background:transparent;border-color:var(--border);color:var(--text-dim)}
@@ -89,6 +89,10 @@
             <div class="panel-title">Editor de Código</div>
             <div class="btn-group">
                 <button class="btn btn-secondary" onclick="cargarEjemplo()">Ejemplo</button>
+                <label class="btn btn-secondary" style="cursor:pointer">
+                    📂 Cargar JSON
+                    <input type="file" id="input-json" accept=".json" style="display:none" onchange="cargarJSON(this)">
+                </label>
                 <button class="btn btn-secondary" onclick="limpiar()">Limpiar</button>
                 <button class="btn btn-primary" onclick="compilarCodigo()">▶ Compilar</button>
             </div>
@@ -127,6 +131,19 @@ function limpiar(){
     document.getElementById('err-count').textContent='';
 }
 async function cargarEjemplo(){const r=await fetch('/ejemplo');const d=await r.json();document.getElementById('editor').value=d.codigo;}
+async function cargarJSON(input){
+    const archivo=input.files[0];
+    if(!archivo)return;
+    const formData=new FormData();
+    formData.append('archivo',archivo);
+    try{
+        const resp=await fetch('/cargar-json',{method:'POST',body:formData});
+        const data=await resp.json();
+        if(data.error){alert('Error: '+data.error);return;}
+        document.getElementById('editor').value=data.codigo;
+        input.value='';
+    }catch(e){alert('Error al cargar el archivo');}
+}
 async function compilarCodigo(){
     const codigo=document.getElementById('editor').value;
     if(!codigo.trim())return;

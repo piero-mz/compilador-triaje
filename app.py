@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, Response
 from compiler import compilar
+from compiler.preprocessor import json_a_triaje
 
 app = Flask(__name__)
 
@@ -40,6 +41,20 @@ def compilar_codigo():
 @app.route("/ejemplo")
 def obtener_ejemplo():
     return jsonify({"codigo": EJEMPLO_CODIGO})
+
+@app.route("/cargar-json", methods=["POST"])
+def cargar_json():
+    if "archivo" not in request.files:
+        return jsonify({"error": "No se envió archivo"}), 400
+    archivo = request.files["archivo"]
+    if not archivo.filename.endswith(".json"):
+        return jsonify({"error": "Solo se aceptan archivos .json"}), 400
+    try:
+        contenido = archivo.read().decode("utf-8")
+        codigo = json_a_triaje(contenido)
+        return jsonify({"codigo": codigo})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 @app.route("/descargar", methods=["POST"])
 def descargar():
