@@ -42,16 +42,20 @@ def compilar_codigo():
 def obtener_ejemplo():
     return jsonify({"codigo": EJEMPLO_CODIGO})
 
-@app.route("/cargar-json", methods=["POST"])
-def cargar_json():
+@app.route("/cargar-archivo", methods=["POST"])
+def cargar_archivo():
     if "archivo" not in request.files:
         return jsonify({"error": "No se envió archivo"}), 400
     archivo = request.files["archivo"]
-    if not archivo.filename.endswith(".json"):
-        return jsonify({"error": "Solo se aceptan archivos .json"}), 400
+    nombre = archivo.filename.lower()
     try:
         contenido = archivo.read().decode("utf-8")
-        codigo = json_a_triaje(contenido)
+        if nombre.endswith(".json"):
+            codigo = json_a_triaje(contenido)
+        elif nombre.endswith(".txt"):
+            codigo = contenido
+        else:
+            return jsonify({"error": "Solo se aceptan archivos .json o .txt"}), 400
         return jsonify({"codigo": codigo})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400

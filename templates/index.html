@@ -90,8 +90,8 @@
             <div class="btn-group">
                 <button class="btn btn-secondary" onclick="cargarEjemplo()">Ejemplo</button>
                 <label class="btn btn-secondary" style="cursor:pointer">
-                    📂 Cargar JSON
-                    <input type="file" id="input-json" accept=".json" style="display:none" onchange="cargarJSON(this)">
+                    📂 Cargar
+                    <input type="file" id="input-archivo" accept=".json,.txt" style="display:none" onchange="cargarArchivo(this)">
                 </label>
                 <button class="btn btn-secondary" onclick="limpiar()">Limpiar</button>
                 <button class="btn btn-primary" onclick="compilarCodigo()">▶ Compilar</button>
@@ -131,13 +131,13 @@ function limpiar(){
     document.getElementById('err-count').textContent='';
 }
 async function cargarEjemplo(){const r=await fetch('/ejemplo');const d=await r.json();document.getElementById('editor').value=d.codigo;}
-async function cargarJSON(input){
+async function cargarArchivo(input){
     const archivo=input.files[0];
     if(!archivo)return;
     const formData=new FormData();
     formData.append('archivo',archivo);
     try{
-        const resp=await fetch('/cargar-json',{method:'POST',body:formData});
+        const resp=await fetch('/cargar-archivo',{method:'POST',body:formData});
         const data=await resp.json();
         if(data.error){alert('Error: '+data.error);return;}
         document.getElementById('editor').value=data.codigo;
