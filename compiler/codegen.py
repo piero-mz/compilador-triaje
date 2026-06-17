@@ -6,8 +6,8 @@ class GeneradorCodigo:
 
     def generar(self):
         self.codigo = []
-        self.codigo.append('# Código generado automáticamente por VitalCheck')
-        self.codigo.append('# Compilador de Triaje Hospitalario - USIL 2026')
+        self.codigo.append('# Código generado')
+        self.codigo.append('# Compilador de Triaje Hospitalario - VitalCheck')
         self.codigo.append('')
         self.codigo.append('from dataclasses import dataclass')
         self.codigo.append('from typing import List')
