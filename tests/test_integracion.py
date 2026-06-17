@@ -52,3 +52,6 @@ def test_claves_nuevas_vacias_en_error_lexico():
     assert r['errores_lexicos']
     assert r['analisis_automatas'] == []
     assert r['analisis_lexico'] == {'token_lexemas': [], 'regex': []}
+    assert r['analisis_sintactico'] == {
+        'categorias': [], 'producciones': [], 'glc_completa': '', 'arbol_mermaid': '',
+    }

@@ -11,7 +11,8 @@ from .gramatica import (
     arbol_a_mermaid,
 )
 
-def compilar(codigo):
+
+def compilar(codigo: str) -> dict:
     resultado = {
         'tokens': [],
         'arbol': None,
