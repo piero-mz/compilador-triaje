@@ -472,10 +472,7 @@ function renderTecnico(data){
     h += renderAutomatasHTML(data.analisis_automatas||[]);
     h += renderSintacticoHTML(data.analisis_sintactico||{});
     c.innerHTML=h;
-    if(window.__mermaid){
-        const nodos=c.querySelectorAll('.mermaid');
-        if(nodos.length) window.__mermaid.run({nodes:nodos});
-    }
+    renderDiagramasMermaid();
 }
 
 function renderNodo(n){
@@ -598,11 +595,33 @@ function renderSintacticoHTML(sint){
     return h;
 }
 
+// Renderiza los diagramas Mermaid de Modo Técnico con mermaid.render(), que mide en
+// su propio contenedor temporal y por eso funciona aunque la pestaña esté oculta
+// (mermaid.run() falla al medir texto dentro de elementos display:none).
+let __mmdSeq = 0;
+async function renderDiagramasMermaid(){
+    if(!window.__mermaid) return;
+    const cont = document.getElementById('tab-tecnico');
+    const nodos = cont.querySelectorAll('pre.mermaid');
+    for(let i=0;i<nodos.length;i++){
+        const n = nodos[i];
+        if(n.dataset.rendered) continue;
+        const src = (n.textContent||'').trim();
+        if(!src) continue;
+        n.dataset.rendered = '1';   // marcar antes del await: evita render doble si se llama en paralelo
+        try{
+            const {svg} = await window.__mermaid.render('mmd_'+(__mmdSeq++), src);
+            n.innerHTML = svg;
+        }catch(e){ n.dataset.rendered = ''; /* si falla, permitir reintento y dejar el texto fuente */ }
+    }
+}
+
 function showTab(name){
     const names=['resultados','errores','tecnico','codigo'];
     document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',names[i]===name);});
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     document.getElementById('tab-'+name).classList.add('active');
+    if(name==='tecnico') renderDiagramasMermaid();
 }
 
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
