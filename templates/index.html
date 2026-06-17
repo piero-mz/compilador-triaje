@@ -116,6 +116,11 @@
         @keyframes spin{to{transform:rotate(360deg)}}
         ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
     </style>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+        window.__mermaid = mermaid;
+    </script>
 </head>
 <body>
 <header>
@@ -123,6 +128,15 @@
     <h1>VitalCheck</h1>
     <span>Compiladores · USIL 2026</span>
 </header>
+<section style="padding:.8rem 2rem;border-bottom:1px solid var(--border);background:rgba(0,212,255,.04)">
+    <strong style="color:var(--accent)">VitalCheck — Compilador de Triaje Hospitalario.</strong>
+    <span style="color:var(--text-dim);font-size:.82rem">
+        Procesa un lenguaje propio de triaje ejecutando <em>análisis léxico → sintáctico → semántico</em>
+        y traduce a código Python. El <strong>Proceso Interno</strong> (pestaña Modo Técnico) muestra la
+        cadena Lexemas → Tokens → Expresiones Regulares → AFND → AFD → Tablas de Transición →
+        Gramáticas → Árbol Sintáctico.
+    </span>
+</section>
 <div class="main">
     <!-- Panel izquierdo: Formulario -->
     <div class="panel-form">
@@ -454,7 +468,14 @@ function renderTecnico(data){
         h+='<div class="section-title" style="margin-top:1rem">Árbol de Sintaxis Abstracta</div>';
         h+=renderNodo(data.arbol);
     }
+    h += renderLexicoHTML(data.analisis_lexico||{});
+    h += renderAutomatasHTML(data.analisis_automatas||[]);
+    h += renderSintacticoHTML(data.analisis_sintactico||{});
     c.innerHTML=h;
+    if(window.__mermaid){
+        const nodos=c.querySelectorAll('.mermaid');
+        if(nodos.length) window.__mermaid.run({nodes:nodos});
+    }
 }
 
 function renderNodo(n){
@@ -481,6 +502,100 @@ async function descargarCodigo(){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;a.download='vitalcheck_output.py';a.click();
+}
+
+function renderTablaTransiciones(tabla){
+    let h='<table style="border-collapse:collapse;font-size:.7rem;margin:.4rem 0">';
+    h+='<tr><th style="border:1px solid var(--border);padding:.3rem .5rem">Estado</th>';
+    tabla.simbolos.forEach(s=>{h+=`<th style="border:1px solid var(--border);padding:.3rem .5rem">${esc(s)}</th>`;});
+    h+='</tr>';
+    tabla.filas.forEach(f=>{
+        const marca=(f.inicial?'→':'')+(f.final?'*':'');
+        h+=`<tr><td style="border:1px solid var(--border);padding:.3rem .5rem">${marca} ${esc(f.estado)}</td>`;
+        tabla.simbolos.forEach(s=>{
+            const d=(f.destinos[s]||[]).join(', ');
+            h+=`<td style="border:1px solid var(--border);padding:.3rem .5rem">${esc(d)||'—'}</td>`;
+        });
+        h+='</tr>';
+    });
+    return h+'</table>';
+}
+
+function renderLexicoHTML(lex){
+    const grupos=lex.token_lexemas||[];
+    const regex=lex.regex||[];
+    if(!grupos.length) return '';
+    let h='<div class="section-title" style="margin-top:1.5rem">Análisis Léxico · Tokens y Lexemas</div>';
+    h+='<table style="border-collapse:collapse;font-size:.72rem;width:100%"><tr>'
+      +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Token (agrupador)</th>'
+      +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Lexemas</th></tr>';
+    grupos.forEach(g=>{
+        h+=`<tr><td style="border:1px solid var(--border);padding:.4rem"><strong>${esc(g.token)}</strong></td>`
+          +`<td style="border:1px solid var(--border);padding:.4rem">${g.lexemas.map(esc).join(', ')}</td></tr>`;
+    });
+    h+='</table>';
+    if(regex.length){
+        h+='<div class="section-title" style="margin-top:1rem">Expresiones Regulares</div>';
+        h+='<table style="border-collapse:collapse;font-size:.72rem;width:100%"><tr>'
+          +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Token</th>'
+          +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Descripción</th>'
+          +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Expresión Regular</th></tr>';
+        regex.forEach(r=>{
+            h+=`<tr><td style="border:1px solid var(--border);padding:.4rem">${esc(r.token)}</td>`
+              +`<td style="border:1px solid var(--border);padding:.4rem">${esc(r.descripcion)}</td>`
+              +`<td style="border:1px solid var(--border);padding:.4rem"><code>${esc(r.regex)}</code></td></tr>`;
+        });
+        h+='</table>';
+    }
+    return h;
+}
+
+function renderAutomatasHTML(items){
+    if(!items.length) return '';
+    let h='<div class="section-title" style="margin-top:1.5rem">Autómatas (AFND → AFD)</div>';
+    items.forEach(it=>{
+        h+=`<div style="margin:1rem 0;padding:.8rem;border:1px solid var(--border);border-radius:8px">`;
+        h+=`<div style="font-weight:600;color:var(--accent)">${esc(it.token)} <code style="color:var(--text-dim)">${esc(it.regex)}</code></div>`;
+        h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.6rem">';
+        h+=`<div><div class="signo-result-nombre">AFND</div><pre class="mermaid">${esc(it.afnd_mermaid)}</pre>${renderTablaTransiciones(it.afnd_tabla)}</div>`;
+        h+=`<div><div class="signo-result-nombre">AFD</div><pre class="mermaid">${esc(it.afd_mermaid)}</pre>${renderTablaTransiciones(it.afd_tabla)}</div>`;
+        h+='</div></div>';
+    });
+    return h;
+}
+
+function renderSintacticoHTML(sint){
+    const cats=sint.categorias||[];
+    if(!cats.length) return '';
+    const color={'directa':'var(--accent2)','indirecta':'var(--warn)','no_aparece':'var(--text-dim)'};
+    let h='<div class="section-title" style="margin-top:1.5rem">Análisis Sintáctico · Categorías de Gramática (18)</div>';
+    h+='<table style="border-collapse:collapse;font-size:.72rem;width:100%"><tr>'
+      +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Categoría</th>'
+      +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Presencia</th>'
+      +'<th style="border:1px solid var(--border);padding:.4rem;text-align:left">Justificación</th></tr>';
+    cats.forEach(c=>{
+        h+=`<tr><td style="border:1px solid var(--border);padding:.4rem">${esc(c.nombre)}</td>`
+          +`<td style="border:1px solid var(--border);padding:.4rem;color:${color[c.presencia]||'var(--text)'}">${esc(c.presencia)}</td>`
+          +`<td style="border:1px solid var(--border);padding:.4rem">${esc(c.justificacion)}</td></tr>`;
+    });
+    h+='</table>';
+    const prods=sint.producciones||[];
+    if(prods.length){
+        h+='<div class="section-title" style="margin-top:1rem">Producciones de las categorías presentes</div>';
+        prods.forEach(p=>{
+            h+=`<div style="margin:.4rem 0"><strong style="color:var(--accent)">${esc(p.nombre)}</strong>`
+              +`<div class="code-block">${p.reglas.map(esc).join('\n')}</div></div>`;
+        });
+    }
+    if(sint.glc_completa){
+        h+='<div class="section-title" style="margin-top:1rem">Gramática Libre de Contexto completa</div>';
+        h+=`<div class="code-block">${esc(sint.glc_completa)}</div>`;
+    }
+    if(sint.arbol_mermaid){
+        h+='<div class="section-title" style="margin-top:1rem">Árbol Sintáctico</div>';
+        h+=`<pre class="mermaid">${esc(sint.arbol_mermaid)}</pre>`;
+    }
+    return h;
 }
 
 function showTab(name){
