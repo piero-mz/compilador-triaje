@@ -139,8 +139,9 @@ def _automata_para(tipo: str, lexema: str) -> dict | None:
     if tipo in _REGEX_AUTOMATAS:
         return _REGEX_AUTOMATAS[tipo]
     if tipo in _KEYWORDS:
-        a = automata_literal(lexema)
-        return {'afnd': a, 'afd': a}
+        # AFND y AFD son objetos distintos aunque reconozcan el mismo literal,
+        # para que un consumidor no pueda corromper uno al mutar el otro.
+        return {'afnd': automata_literal(lexema), 'afd': automata_literal(lexema)}
     return None
 
 
