@@ -61,16 +61,22 @@ _REGEX_AUTOMATAS: dict[str, dict] = {
         },
     },
     'NIVEL_VAL': {
+        # AFND: alternación I|II|III|IV|V con ε-transiciones a cada rama (estilo Thompson).
         'afnd': {
-            'estados': ['S0', 'S1', 'S2', 'S3', 'S4', 'S5'],
-            'inicial': 'S0',
-            'finales': ['S1', 'S2', 'S3', 'S4', 'S5'],
-            'alfabeto': ['I', 'V'],
+            'estados': ['N0', 'a1', 'a2', 'b1', 'b2', 'b3',
+                        'c1', 'c2', 'c3', 'c4', 'd1', 'd2', 'd3', 'e1', 'e2'],
+            'inicial': 'N0',
+            'finales': ['a2', 'b3', 'c4', 'd3', 'e2'],
+            'alfabeto': ['I', 'V', 'ε'],
             'transiciones': [
-                ('S0', 'I', 'S1'), ('S1', 'I', 'S2'), ('S2', 'I', 'S3'),
-                ('S1', 'V', 'S4'), ('S0', 'V', 'S5'),
+                ('N0', 'ε', 'a1'), ('a1', 'I', 'a2'),                                 # I
+                ('N0', 'ε', 'b1'), ('b1', 'I', 'b2'), ('b2', 'I', 'b3'),              # II
+                ('N0', 'ε', 'c1'), ('c1', 'I', 'c2'), ('c2', 'I', 'c3'), ('c3', 'I', 'c4'),  # III
+                ('N0', 'ε', 'd1'), ('d1', 'I', 'd2'), ('d2', 'V', 'd3'),              # IV
+                ('N0', 'ε', 'e1'), ('e1', 'V', 'e2'),                                 # V
             ],
         },
+        # AFD: determinización con prefijos fusionados.
         'afd': {
             'estados': ['S0', 'S1', 'S2', 'S3', 'S4', 'S5'],
             'inicial': 'S0',

@@ -29,7 +29,7 @@ _PRODUCCIONES: dict[str, list[str]] = {
     'identificadores': ['<id> ::= <letra> ( <letra> | <digito> | "_" )*'],
     'asignaciones': ['<asignacion> ::= <id> "=" <valor> ";"',
                      '<valor> ::= <numero> | <cadena> | <nivel>'],
-    'cadenas_balanceadas': ['<cadena> ::= "\\"" <caracter>* "\\""'],
+    'cadenas_balanceadas': ['<cadena> ::= \'"\' <caracter>* \'"\''],
     'declaraciones': ['<paciente> ::= "PACIENTE" <id> "{" <cuerpo> "}"',
                       '<signos> ::= "SIGNOS" "VITALES" "{" <asignacion>* "}"',
                       '<sintoma> ::= "SINTOMA" "=" <cadena> ";"',
@@ -53,7 +53,7 @@ S = <programa>
 <nivel>      ::= "I" | "II" | "III" | "IV" | "V"
 <numero>     ::= <digito>+ ( "." <digito>+ )?
 <id>         ::= <letra> ( <letra> | <digito> | "_" )*
-<cadena>     ::= "\\"" <caracter>* "\\""
+<cadena>     ::= '"' <caracter>* '"'
 """
 
 
