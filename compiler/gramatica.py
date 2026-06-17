@@ -135,7 +135,7 @@ def producciones_presentes(categorias: list[dict]) -> list[dict]:
 
 def arbol_a_mermaid(arbol: dict | None) -> str:
     """Convierte el AST a un diagrama Mermaid graph TD con ids únicos por nodo."""
-    if not arbol:
+    if arbol is None:
         return ''
     lineas = ['graph TD']
     contador = [0]

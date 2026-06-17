@@ -72,5 +72,11 @@ def test_arbol_a_mermaid_none():
     assert arbol_a_mermaid(None) == ''
 
 
+def test_sin_llaves_no_aparece():
+    tokens_sin_llaves = [t for t in TOKENS if t['tipo'] not in ('LLAVE_AB', 'LLAVE_CI')]
+    res = {c['id']: c['presencia'] for c in detectar_categorias(tokens_sin_llaves, ARBOL)}
+    assert res['parentesis_balanceados'] == 'no_aparece'
+
+
 def test_glc_completa_no_vacia():
     assert GLC_COMPLETA.strip()
