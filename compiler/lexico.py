@@ -13,11 +13,6 @@ REGEX_CURADAS: dict[str, tuple[str, str]] = {
     'PRIORIDAD': ('Palabra clave PRIORIDAD', r'PRIORIDAD'),
     'NIVEL':     ('Palabra clave NIVEL',     r'NIVEL'),
     'FIN':       ('Palabra clave FIN',       r'FIN'),
-    'ASIGNAR':   ('Operador de asignación',  r'='),
-    'LLAVE_AB':  ('Llave de apertura',       r'\{'),
-    'LLAVE_CI':  ('Llave de cierre',         r'\}'),
-    'DOS_PUNTOS': ('Dos puntos',             r':'),
-    'COMA':      ('Coma',                    r','),
 }
 
 
