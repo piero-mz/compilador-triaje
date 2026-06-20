@@ -2,8 +2,17 @@ from .lexer import Lexer
 from .parser import Parser
 from .semantic import AnalizadorSemantico
 from .codegen import GeneradorCodigo
+from .lexico import agrupar_tokens_lexemas, tabla_expresiones_regulares
+from .automatas import seleccionar_automatas
+from .gramatica import (
+    detectar_categorias,
+    producciones_presentes,
+    GLC_COMPLETA,
+    arbol_a_mermaid,
+)
 
-def compilar(codigo):
+
+def compilar(codigo: str) -> dict:
     resultado = {
         'tokens': [],
         'arbol': None,
@@ -13,7 +22,13 @@ def compilar(codigo):
         'errores_semanticos': [],
         'advertencias': [],
         'codigo_generado': '',
-        'exitoso': False
+        'exitoso': False,
+        'analisis_lexico': {'token_lexemas': [], 'regex': []},
+        'analisis_automatas': [],
+        'analisis_sintactico': {
+            'categorias': [], 'producciones': [],
+            'glc_completa': '', 'arbol_mermaid': '',
+        },
     }
 
     lexer = Lexer(codigo)
@@ -48,5 +63,24 @@ def compilar(codigo):
 
     total_errores = len(errores_lex) + len(errores_sin) + len(errores_sem)
     resultado['exitoso'] = total_errores == 0
+
+    tokens_dict = resultado['tokens']
+    tipos_presentes = {t['tipo'] for t in tokens_dict}
+    grupos = agrupar_tokens_lexemas(tokens_dict)
+    lexemas_por_tipo = {g['token']: g['lexemas'] for g in grupos}
+
+    resultado['analisis_lexico'] = {
+        'token_lexemas': grupos,
+        'regex': tabla_expresiones_regulares(tipos_presentes),
+    }
+    resultado['analisis_automatas'] = seleccionar_automatas(tipos_presentes, lexemas_por_tipo)
+
+    categorias = detectar_categorias(tokens_dict, resultado['arbol'])
+    resultado['analisis_sintactico'] = {
+        'categorias': categorias,
+        'producciones': producciones_presentes(categorias),
+        'glc_completa': GLC_COMPLETA,
+        'arbol_mermaid': arbol_a_mermaid(resultado['arbol']),
+    }
 
     return resultado
